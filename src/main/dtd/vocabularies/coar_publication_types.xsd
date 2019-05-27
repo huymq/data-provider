@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	From release 1.1.1 of the OpenAIRE Guidelines for CRIS Managers, see https://doi.org/10.5281/zenodo.2316420
+-->
+<xs:schema xmlns="https://www.openaire.eu/cerif-profile/vocab/COAR_Publication_Types" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:skosxl="http://www.w3.org/2008/05/skos-xl#" xmlns:cf="urn:xmlns:org.eurocris.cerif" xmlns:dc-term="http://purl.org/dc/terms/" xmlns:vocbench="http://art.uniroma2.it/ontologies/vocbench#" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="https://www.openaire.eu/cerif-profile/vocab/COAR_Publication_Types" xsi:schemaLocation="http://www.w3.org/2001/XMLSchema https://www.w3.org/2012/04/XMLSchema.xsd">
+   <xs:annotation>
+      <xs:documentation>Publication types extracted from the COAR Resource Types concept scheme: Types of publications as extracted from the COAR Resource Types concept scheme (http://vocabularies.coar-repositories.org/documentation/resource_types/, the term 'text' and its descendants in the hierarchy except 'patent').</xs:documentation>
+      <xs:appinfo>
+         <cf:ClassScheme id="https://www.openaire.eu/cerif-profile/vocab/COAR_Publication_Types">
+            <cf:Term xmlns="en">Publication types extracted from the COAR Resource Types concept scheme</cf:Term>
+            <cf:Description xmlns="en">Types of publications as extracted from the COAR Resource Types concept scheme (http://vocabularies.coar-repositories.org/documentation/resource_types/, the term 'text' and its descendants in the hierarchy except 'patent').</cf:Description>
+         </cf:ClassScheme>
+      </xs:appinfo>
+   </xs:annotation>
+   
+   <xs:include schemaLocation="../includes/cerif-commons.xsd"/>
+   <xs:element name="Type">
+      <xs:complexType>
+         <xs:simpleContent>
+            <xs:extension base="Enum">
+               <xs:attributeGroup ref="cfExtension__AttributeGroup"/>
+            </xs:extension>
+         </xs:simpleContent>
+      </xs:complexType>
+   </xs:element>
+   <xs:simpleType name="Enum">
+      <xs:restriction base="xs:string">
+ 
+      </xs:restriction>
+   </xs:simpleType>
+</xs:schema>
