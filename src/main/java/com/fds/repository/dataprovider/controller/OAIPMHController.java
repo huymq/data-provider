@@ -29,25 +29,28 @@ import eu.openaire.cerifProfile.x11.CfMLangStringType;
 import eu.openaire.cerifProfile.x11.CfStringType;
 import eu.openaire.cerifProfile.x11.OrgUnitDocument;
 import eu.openaire.cerifProfile.x11.StandardDocument;
-import eu.openaire.cerifProfile.x11.CfTransType.Enum;
 import eu.openaire.cerifProfile.x11.OrgUnitDocument.OrgUnit;
 import eu.openaire.cerifProfile.x11.StandardDocument.Standard;
+import eu.openaire.cerifProfile.x11.StandardDocument.Standard.Editors;
+import eu.openaire.cerifProfile.x11.StandardDocument.Standard.EquivalentTo;
+import eu.openaire.cerifProfile.x11.StandardDocument.Standard.NomativeReferences;
+import eu.openaire.cerifProfile.x11.StandardDocument.Standard.ReplacedBy;
 
-import com.fds.repository.dataprovider.model.TCCN;
-import com.fds.repository.dataprovider.model.TCCNRepository;
+import com.fds.repository.dataprovider.model.TieuChuan;
+import com.fds.repository.dataprovider.service.TieuChuanService;
 
 @RestController
 @RequestMapping("/oai")
 public class OAIPMHController {
-    public static final Logger logger = LoggerFactory.getLogger(OAIPMHController.class);
+	public static final Logger logger = LoggerFactory.getLogger(OAIPMHController.class);
 
-    @Autowired
-    private TCCNRepository tccnRepository;
+	@Autowired
+    private TieuChuanService tieuChuanService;
 
-    @RequestMapping(value = "/test/", method = RequestMethod.GET, produces = { "application/xml" })
-    public String getTest() {
+	@RequestMapping(value = "/test/", method = RequestMethod.GET, produces = { "application/xml" })
+	public String getTest() {
 		Calendar c = Calendar.getInstance();
-		
+
 		OAIPMHDocument doc = OAIPMHDocument.Factory.newInstance();
 		OAIPMHtype type = doc.addNewOAIPMH();
 		c.setTime(new Date());
@@ -64,7 +67,7 @@ public class OAIPMHController {
 		headerType.setIdentifier("oai:cris.example.org:OrgUnits/312345");
 		headerType.setDatestamp(c);
 		headerType.addSetSpec("openaire_cris_orgunits");
-		
+
 		MetadataType mtype = rtype.addNewMetadata();
 		OrgUnitDocument orgDoc = OrgUnitDocument.Factory.newInstance();
 		OrgUnit orgUnit = orgDoc.addNewOrgUnit();
@@ -77,127 +80,225 @@ public class OAIPMHController {
 		CfGenericIdentifierType idenOrg = orgUnit.addNewIdentifier();
 		idenOrg.setStringValue("http://www.uoa.gr");
 		mtype.set(orgDoc);
-        rtype.setMetadata(mtype); 
-        System.out.println("XML: " + doc.toString());       
-        return doc.xmlText();
-    }
+		rtype.setMetadata(mtype);
+		System.out.println("XML: " + doc.toString());
+		return doc.xmlText();
+	}
 
-    @RequestMapping(value = "/", method = RequestMethod.GET, produces = { "application/xml" })
-    public String processOAIRequest(@QueryParam("verb") String verb,
-        @QueryParam("identifier") String identifier,
-        @QueryParam("from") String from,
-        @QueryParam("to") String to) {
-        if ("ListMetadataFormats".contentEquals(verb)) {
-            Calendar c = Calendar.getInstance();
-		
-            OAIPMHDocument doc = OAIPMHDocument.Factory.newInstance();
-            OAIPMHtype type = doc.addNewOAIPMH();
-            c.setTime(new Date());
-            type.setResponseDate(c);
-            ListRecordsType lrType = type.addNewListRecords();
-            RequestType request = type.addNewRequest();
-            request.setMetadataPrefix("cerif_openaire");
-            request.setVerb(org.openarchives.oai.x20.VerbType.Enum.forString("ListRecords"));
-            request.setSet("openaire_cris_orgunits");
-            request.setStringValue("http://cris.example.org/openaire/connector");
-            type.setListRecords(lrType);
-            RecordType rtype = lrType.addNewRecord();
-            HeaderType headerType = rtype.addNewHeader();
-            headerType.setIdentifier("oai:cris.example.org:OrgUnits/312345");
-            headerType.setDatestamp(c);
-            headerType.addSetSpec("openaire_cris_orgunits");
-            
-            MetadataType mtype = rtype.addNewMetadata();
-            OrgUnitDocument orgDoc = OrgUnitDocument.Factory.newInstance();
-            OrgUnit orgUnit = orgDoc.addNewOrgUnit();
-            CfStringType acronymOrg = CfStringType.Factory.newInstance();
-            acronymOrg.setStringValue("NKUA");
-            orgUnit.setAcronym(acronymOrg);
-            CfMLangStringType orgName = orgUnit.addNewName();
-            orgName.setLang("en");
-            orgName.setStringValue("NATIONAL AND KAPODISTRIAN UNIVERSITY OF ATHENS");
-            CfGenericIdentifierType idenOrg = orgUnit.addNewIdentifier();
-            idenOrg.setStringValue("http://www.uoa.gr");
-            mtype.set(orgDoc);
-            rtype.setMetadata(mtype); 
-            return doc.xmlText();
-        }
-        else if ("ListSets".contentEquals(verb)) {
-            Calendar c = Calendar.getInstance();
-		
-            OAIPMHDocument doc = OAIPMHDocument.Factory.newInstance();
-            OAIPMHtype type = doc.addNewOAIPMH();
-            c.setTime(new Date());
-            type.setResponseDate(c);
-            RequestType request = type.addNewRequest();
-            request.setStringValue("http://an.oa.org/OAI-script");
-            request.setVerb(org.openarchives.oai.x20.VerbType.Enum.forString("ListSets"));
-            ListSetsType listSetType = type.addNewListSets();
-            SetType setType = listSetType.addNewSet();
-            setType.setSetName("Music collection");
-            setType.setSetSpec("music");
-            return doc.xmlText();
-        }
-        else if ("ListRecords".contentEquals(verb)) {
-            Calendar c = Calendar.getInstance();
-		
-            OAIPMHDocument doc = OAIPMHDocument.Factory.newInstance();
+	@RequestMapping(value = "/", method = RequestMethod.GET, produces = { "application/xml" })
+	public String processOAIRequest(@QueryParam("verb") String verb, @QueryParam("set") String set,
+			@QueryParam("identifier") String identifier,
+			@QueryParam("from") String from, @QueryParam("to") String to) {
+		if ("ListMetadataFormats".contentEquals(verb)) {
+			Calendar c = Calendar.getInstance();
 
-            OAIPMHtype type = doc.addNewOAIPMH();
-            c.setTime(new Date());
-            type.setResponseDate(c);
-            RequestType request = type.addNewRequest();
-            request.setStringValue("http://an.oa.org/OAI-script");
-            request.setVerb(org.openarchives.oai.x20.VerbType.Enum.forString("ListRecords"));
-            
-            String pattern = "yyyy-MM-dd";
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+			OAIPMHDocument doc = OAIPMHDocument.Factory.newInstance();
+			OAIPMHtype type = doc.addNewOAIPMH();
+			c.setTime(new Date());
+			type.setResponseDate(c);
+			ListRecordsType lrType = type.addNewListRecords();
+			RequestType request = type.addNewRequest();
+			request.setMetadataPrefix("cerif_openaire");
+			request.setVerb(org.openarchives.oai.x20.VerbType.Enum.forString("ListRecords"));
+			request.setSet("openaire_cris_orgunits");
+			request.setStringValue("http://cris.example.org/openaire/connector");
+			type.setListRecords(lrType);
+			RecordType rtype = lrType.addNewRecord();
+			HeaderType headerType = rtype.addNewHeader();
+			headerType.setIdentifier("oai:cris.example.org:OrgUnits/312345");
+			headerType.setDatestamp(c);
+			headerType.addSetSpec("openaire_cris_orgunits");
 
-            ListRecordsType lstRecordType = type.addNewListRecords();
-            List<TCCN> lstTccns = tccnRepository.findBetweenPublicationDate(new Date(0), new Date());
+			MetadataType mtype = rtype.addNewMetadata();
+			OrgUnitDocument orgDoc = OrgUnitDocument.Factory.newInstance();
+			OrgUnit orgUnit = orgDoc.addNewOrgUnit();
+			CfStringType acronymOrg = CfStringType.Factory.newInstance();
+			acronymOrg.setStringValue("NKUA");
+			orgUnit.setAcronym(acronymOrg);
+			CfMLangStringType orgName = orgUnit.addNewName();
+			orgName.setLang("en");
+			orgName.setStringValue("NATIONAL AND KAPODISTRIAN UNIVERSITY OF ATHENS");
+			CfGenericIdentifierType idenOrg = orgUnit.addNewIdentifier();
+			idenOrg.setStringValue("http://www.uoa.gr");
+			mtype.set(orgDoc);
+			rtype.setMetadata(mtype);
+			return doc.xmlText();
+		} else if ("ListSets".contentEquals(verb)) {
+			Calendar c = Calendar.getInstance();
 
-            for (TCCN tccn : lstTccns) {
-                RecordType recordType = lstRecordType.addNewRecord();
-                MetadataType metaType = recordType.addNewMetadata();
-                StandardDocument standardDoc = StandardDocument.Factory.newInstance();
-                Standard standard = standardDoc.addNewStandard();
+			OAIPMHDocument doc = OAIPMHDocument.Factory.newInstance();
+			OAIPMHtype type = doc.addNewOAIPMH();
+			c.setTime(new Date());
+			type.setResponseDate(c);
+			RequestType request = type.addNewRequest();
+			request.setStringValue("http://an.oa.org/OAI-script");
+			request.setVerb(org.openarchives.oai.x20.VerbType.Enum.forString("ListSets"));
+			ListSetsType listSetType = type.addNewListSets();
+			
+			SetType setType = null;
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("OpenAIRE_CRIS_publications");
+			setType.setSetSpec("openaire_cris_publications");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_products");
+			setType.setSetSpec("OpenAIRE_CRIS_products");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_patents");
+			setType.setSetSpec("OpenAIRE_CRIS_patents");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_persons");
+			setType.setSetSpec("OpenAIRE_CRIS_persons");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_orgunits");
+			setType.setSetSpec("OpenAIRE_CRIS_orgunits");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_projects");
+			setType.setSetSpec("OpenAIRE_CRIS_projects");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_funding");
+			setType.setSetSpec("OpenAIRE_CRIS_funding");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_events");
+			setType.setSetSpec("OpenAIRE_CRIS_events");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_journals");
+			setType.setSetSpec("OpenAIRE_CRIS_journals");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_equipments");
+			setType.setSetSpec("OpenAIRE_CRIS_equipments");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_techs");
+			setType.setSetSpec("OpenAIRE_CRIS_techs");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_standards");
+			setType.setSetSpec("OpenAIRE_CRIS_standards");
+			
+			setType = listSetType.addNewSet();
+			setType.setSetName("openaire_cris_awards");
+			setType.setSetSpec("OpenAIRE_CRIS_awards");
+			
+			return doc.xmlText();
+		} else if ("ListRecords".contentEquals(verb)) {
+			Calendar c = Calendar.getInstance();
 
-                CfDateType publicationDate = standard.addNewPublicationDate();
-                publicationDate.setDateValue(tccn.getNgaycongnhan());
-                CfStringType tempString = CfStringType.Factory.newInstance();
-                tempString.setStringValue("TCVN");
-                standard.setType(tempString);
-                CfMLangStringType tempLangStringVi = CfMLangStringType.Factory.newInstance();
-                tempLangStringVi.setLang("vi");
-                tempLangStringVi.setStringValue(tccn.getTentiengviet());
+			OAIPMHDocument doc = OAIPMHDocument.Factory.newInstance();
 
-                CfMLangStringType tempLangStringEn = CfMLangStringType.Factory.newInstance();
-                tempLangStringEn.setLang("en");
-                tempLangStringEn.setStringValue(tccn.getTentienganh());
+			OAIPMHtype type = doc.addNewOAIPMH();
+			c.setTime(new Date());
+			type.setResponseDate(c);
+			RequestType request = type.addNewRequest();
+			request.setStringValue("http://an.oa.org/OAI-script");
+			request.setVerb(org.openarchives.oai.x20.VerbType.Enum.forString("ListRecords"));
 
-                tempString.setStringValue(tccn.getSogiaychungnhan());
-                standard.setTitleArray(new CfMLangStringType[] { tempLangStringVi, tempLangStringEn });
-                standard.setDecisionNumber(tempString);
-                metaType.set(standardDoc);
+			String pattern = "yyyy-MM-dd";
+			SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+			
+			if("openaire_cris_standards".equals(set)) {
+				ListRecordsType lstRecordType = type.addNewListRecords();
+				List<TieuChuan> lstTieuChuan = tieuChuanService.findAll();
 
-                Calendar pubC = Calendar.getInstance();
-                pubC.setTime(tccn.getNgaycongnhan());
-                
-                CfDateType tempDate = CfDateType.Factory.newInstance();
-                tempDate.set(tempDate);
-                standard.setPublicationDate(tempDate);
-            }
+				for (TieuChuan tieuChuan : lstTieuChuan) {
+					RecordType recordType = lstRecordType.addNewRecord();
+					MetadataType metaType = recordType.addNewMetadata();
+					StandardDocument standardDoc = StandardDocument.Factory.newInstance();
+					Standard standard = standardDoc.addNewStandard();
+					
+					standard.setId(String.valueOf(tieuChuan.getId()));
+					
+					CfStringType tempString = CfStringType.Factory.newInstance();
+					tempString.setStringValue("TCVN");
+					
+					standard.setType(tempString);
+					
+					tempString.setStringValue(tieuChuan.getSoHieu());
+					standard.setIdentifier(tempString);
+					
+					CfMLangStringType tempLangStringVi = CfMLangStringType.Factory.newInstance();
+					tempLangStringVi.setLang("vi");
+					tempLangStringVi.setStringValue(tieuChuan.getTenTiengViet());
 
-            if (!"".equals(from) && from != null) {
-                System.out.println("Have from");
-            }
-            if (!"".equals(to) && to != null) {
-                System.out.println("Have to");
-            }
-            return doc.xmlText();
-        }
-        else {
-            return verb;
-        }
-    }
+					CfMLangStringType tempLangStringEn = CfMLangStringType.Factory.newInstance();
+					tempLangStringEn.setLang("en");
+					tempLangStringEn.setStringValue(tieuChuan.getTenTiengAnh());
+
+					if(tieuChuan.getThoiGianBatDau() != null) {
+						CfDateType publicationDate = standard.addNewPublicationDate();
+						publicationDate.setDateValue(tieuChuan.getThoiGianBatDau());
+						standard.setPublicationDate(publicationDate);
+					}
+					
+					standard.setTitleArray(new CfMLangStringType[] { tempLangStringVi, tempLangStringEn });
+					
+					if("A".equalsIgnoreCase(tieuChuan.getTinhTrang())) {
+						tempString.setStringValue("A - Còn hiệu lực");
+						standard.setStatus(tempString);
+					} else if("H".equalsIgnoreCase(tieuChuan.getTinhTrang())) {
+						tempString.setStringValue("W - Hết hiệu lực");
+						standard.setStatus(tempString);
+					}
+					
+					tempString.setStringValue(tieuChuan.getChiSoPhanLoai());
+					standard.setSubjectArray(new CfStringType[] {tempString});
+					
+					tempString.setStringValue(String.valueOf(tieuChuan.getSoTrang()));
+					standard.setPage(tempString);
+					
+					tempString.setStringValue(tieuChuan.getPhamViApDung());
+					standard.setScopeArray(new CfStringType[] {tempString});
+					
+					tempString.setStringValue(tieuChuan.getQuyetDinhBanHanh());
+					standard.setDecisionNumber(tempString);
+					
+					tempString.setStringValue(tieuChuan.getThayTheBang());
+					EquivalentTo equivalentTo = EquivalentTo.Factory.newInstance();
+					equivalentTo.addNewStandard().setIdentifier(tempString);
+					standard.setEquivalentToArray(new EquivalentTo[] {equivalentTo});
+					
+					tempString.setStringValue(tieuChuan.getThayTheCho());
+					ReplacedBy replacedBy = ReplacedBy.Factory.newInstance();
+					replacedBy.addNewStandard().setIdentifier(tempString);
+					standard.setReplacedByArray(new ReplacedBy[] {replacedBy});
+					
+					tempString.setStringValue(tieuChuan.getTieuChuanVienDan());
+					NomativeReferences nomativeReferences = NomativeReferences.Factory.newInstance();
+					nomativeReferences.addNewStandard().setIdentifier(tempString);
+					standard.setNomativeReferencesArray(new NomativeReferences[] {nomativeReferences});
+					
+					//TODO: query ban ky thuat
+					OrgUnitDocument orgUnitDocument = OrgUnitDocument.Factory.newInstance();
+					OrgUnit orgUnit = orgUnitDocument.addNewOrgUnit();
+					orgUnit.setId(String.valueOf(tieuChuan.getIdBanKyThuat()));
+					
+					tempString.setStringValue("NAVIS");
+					orgUnit.setAcronym(tempString);
+					
+					tempLangStringVi.setStringValue("Trung tâm Quốc tế Nghiên cứu và Phát triển Công nghệ định vị sử dụng vệ tinh");
+					tempLangStringEn.setStringValue("NAVIS");
+					orgUnit.setNameArray(new CfMLangStringType[] { tempLangStringVi, tempLangStringEn });
+					
+					Editors editors = standard.addNewEditors();
+					editors.addNewEditor().set(orgUnitDocument);
+					
+					metaType.set(standardDoc);
+
+				}
+			}
+
+			return doc.xmlText();
+		} else {
+			return verb;
+		}
+	}
 }
