@@ -1,5 +1,6 @@
 package com.fds.repository.dataprovider.controller;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -88,7 +89,8 @@ public class OAIPMHController {
 	@RequestMapping(value = "/", method = RequestMethod.GET, produces = { "application/xml" })
 	public String processOAIRequest(@QueryParam("verb") String verb, @QueryParam("set") String set,
 			@QueryParam("identifier") String identifier,
-			@QueryParam("from") String from, @QueryParam("to") String to) {
+			@QueryParam("from") String from, @QueryParam("to") String to,
+			@QueryParam("start") String start, @QueryParam("end") String end) {
 		if ("ListMetadataFormats".contentEquals(verb)) {
 			Calendar c = Calendar.getInstance();
 
@@ -206,9 +208,23 @@ public class OAIPMHController {
 			SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
 			
 			if("openaire_cris_standards".equals(set)) {
-				ListRecordsType lstRecordType = type.addNewListRecords();
-				List<TieuChuan> lstTieuChuan = tieuChuanService.findAll();
+				
+				Date start_ts = null;
+				try {
+					start_ts = simpleDateFormat.parse(start);
+				} catch (ParseException e) {
+					
+				}
+				Date end_ts = null;
+				try {
+					end_ts = simpleDateFormat.parse(end);
+				} catch (ParseException e) {
+					
+				}
+				
+				List<TieuChuan> lstTieuChuan = tieuChuanService.findByStartEnd(start_ts, end_ts);
 
+				ListRecordsType lstRecordType = type.addNewListRecords();
 				for (TieuChuan tieuChuan : lstTieuChuan) {
 					RecordType recordType = lstRecordType.addNewRecord();
 					MetadataType metaType = recordType.addNewMetadata();
